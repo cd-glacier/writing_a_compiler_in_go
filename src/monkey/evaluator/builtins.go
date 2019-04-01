@@ -2,7 +2,8 @@ package evaluator
 
 import (
 	"fmt"
-	"monkey/object"
+
+	"github.com/g-hyoga/writing_a_compiler_in_go/src/monkey/object"
 )
 
 var builtins = map[string]*object.Builtin{

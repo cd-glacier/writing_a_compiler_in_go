@@ -2,8 +2,9 @@ package ast
 
 import (
 	"bytes"
-	"monkey/token"
 	"strings"
+
+	"github.com/g-hyoga/writing_a_compiler_in_go/src/monkey/token"
 )
 
 // The base Node interface

@@ -1,10 +1,11 @@
 package evaluator
 
 import (
-	"monkey/lexer"
-	"monkey/object"
-	"monkey/parser"
 	"testing"
+
+	"github.com/g-hyoga/writing_a_compiler_in_go/src/monkey/lexer"
+	"github.com/g-hyoga/writing_a_compiler_in_go/src/monkey/object"
+	"github.com/g-hyoga/writing_a_compiler_in_go/src/monkey/parser"
 )
 
 func TestEvalIntegerExpression(t *testing.T) {

@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"hash/fnv"
-	"monkey/ast"
 	"strings"
+
+	"github.com/g-hyoga/writing_a_compiler_in_go/src/monkey/ast"
 )
 
 type BuiltinFunction func(args ...Object) Object

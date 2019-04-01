@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"monkey/repl"
 	"os"
 	"os/user"
+
+	"github.com/g-hyoga/writing_a_compiler_in_go/src/monkey/repl"
 )
 
 func main() {

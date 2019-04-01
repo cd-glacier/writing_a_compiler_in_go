@@ -4,10 +4,11 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"monkey/evaluator"
-	"monkey/lexer"
-	"monkey/object"
-	"monkey/parser"
+
+	"github.com/g-hyoga/writing_a_compiler_in_go/src/monkey/evaluator"
+	"github.com/g-hyoga/writing_a_compiler_in_go/src/monkey/lexer"
+	"github.com/g-hyoga/writing_a_compiler_in_go/src/monkey/object"
+	"github.com/g-hyoga/writing_a_compiler_in_go/src/monkey/parser"
 )
 
 const PROMPT = ">> "
