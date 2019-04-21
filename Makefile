@@ -5,6 +5,9 @@ deps: ## install development dependencies
 	go get -u github.com/rakyll/gotest
 	go get -u github.com/nathany/looper
 
+run: ## run vm machine
+	go run src/monkey/main.go
+
 test: ## test with gotest
 	gotest -v ./src/...
 

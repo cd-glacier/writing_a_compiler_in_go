@@ -5,17 +5,16 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/g-hyoga/writing_a_compiler_in_go/src/monkey/evaluator"
+	"github.com/g-hyoga/writing_a_compiler_in_go/src/monkey/compiler"
 	"github.com/g-hyoga/writing_a_compiler_in_go/src/monkey/lexer"
-	"github.com/g-hyoga/writing_a_compiler_in_go/src/monkey/object"
 	"github.com/g-hyoga/writing_a_compiler_in_go/src/monkey/parser"
+	"github.com/g-hyoga/writing_a_compiler_in_go/src/monkey/vm"
 )
 
 const PROMPT = ">> "
 
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
-	env := object.NewEnvironment()
 
 	for {
 		fmt.Printf(PROMPT)
@@ -34,11 +33,23 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
-		evaluated := evaluator.Eval(program, env)
-		if evaluated != nil {
-			io.WriteString(out, evaluated.Inspect())
-			io.WriteString(out, "\n")
+		comp := compiler.New()
+		err := comp.Compile(program)
+		if err != nil {
+			fmt.Fprintf(out, "Woops! Compilation failed:\n %s\n", err)
+			continue
 		}
+
+		machine := vm.New(comp.Bytecode())
+		err = machine.Run()
+		if err != nil {
+			fmt.Fprintf(out, "Woops! Executing failed:\n %s\n", err)
+			continue
+		}
+
+		stackTop := machine.StackTop()
+		io.WriteString(out, stackTop.Inspect())
+		io.WriteString(out, "\n")
 	}
 }
 
