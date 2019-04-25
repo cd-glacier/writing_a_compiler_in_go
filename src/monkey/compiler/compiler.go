@@ -137,6 +137,17 @@ func (c *Compiler) Compile(node ast.Node) error {
 		afterConsequencePos := len(c.instructions)
 		c.changeOperand(jumpNotTruthyPos, afterConsequencePos)
 
+		if node.Alternative == nil {
+			afterConsequencePos := len(c.instructions)
+			c.changeOperand(jumpNotTruthyPos, afterConsequencePos)
+		} else {
+			c.emit(code.OpJump, 9999)
+
+			afterConsequencePos := len(c.instructions)
+			c.changeOperand(jumpNotTruthyPos, afterConsequencePos)
+			// p.99~
+		}
+
 	case *ast.BlockStatement:
 		for _, s := range node.Statements {
 			err := c.Compile(s)
