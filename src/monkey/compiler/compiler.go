@@ -32,63 +32,13 @@ func New() *Compiler {
 func (c *Compiler) Compile(node ast.Node) error {
 	switch node := node.(type) {
 	case *ast.Program:
-		for _, s := range node.Statements {
-			err := c.Compile(s)
-			if err != nil {
-				return err
-			}
-		}
+		return c.compileProgram(node)
 
 	case *ast.ExpressionStatement:
-		err := c.Compile(node.Expression)
-		if err != nil {
-			return err
-		}
-		c.emit(code.OpPop)
+		return c.compileExpressionStatement(node)
 
 	case *ast.InfixExpression:
-		if node.Operator == "<" {
-			err := c.Compile(node.Right)
-			if err != nil {
-				return err
-			}
-
-			err = c.Compile(node.Left)
-			if err != nil {
-				return err
-			}
-
-			c.emit(code.OpGreaterThan)
-			return nil
-		}
-		err := c.Compile(node.Left)
-		if err != nil {
-			return err
-		}
-
-		err = c.Compile(node.Right)
-		if err != nil {
-			return err
-		}
-
-		switch node.Operator {
-		case "+":
-			c.emit(code.OpAdd)
-		case "-":
-			c.emit(code.OpSub)
-		case "*":
-			c.emit(code.OpMul)
-		case "/":
-			c.emit(code.OpDiv)
-		case ">":
-			c.emit(code.OpGreaterThan)
-		case "==":
-			c.emit(code.OpEqual)
-		case "!=":
-			c.emit(code.OpNotEqual)
-		default:
-			return fmt.Errorf("unknown operator %s", node.Operator)
-		}
+		return c.compileInfixExpression(node)
 
 	case *ast.IntegerLiteral:
 		integer := &object.Integer{Value: node.Value}
@@ -102,30 +52,131 @@ func (c *Compiler) Compile(node ast.Node) error {
 		}
 
 	case *ast.PrefixExpression:
-		err := c.Compile(node.Right)
-		if err != nil {
-			return nil
-		}
-
-		switch node.Operator {
-		case "!":
-			c.emit(code.OpBang)
-		case "-":
-			c.emit(code.OpMinus)
-		default:
-			return fmt.Errorf("unknown operator %s", node.Operator)
-		}
+		return c.compilePrefixExpression(node)
 
 	case *ast.IfExpression:
-		err := c.Compile(node.Condition)
+		return c.compileIfExpression(node)
+
+	case *ast.BlockStatement:
+		return c.compileBlockStatement(node)
+
+	}
+
+	return nil
+}
+
+func (c *Compiler) compileProgram(node *ast.Program) error {
+	for _, s := range node.Statements {
+		err := c.Compile(s)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (c *Compiler) compileExpressionStatement(node *ast.ExpressionStatement) error {
+	err := c.Compile(node.Expression)
+	if err != nil {
+		return err
+	}
+	c.emit(code.OpPop)
+	return nil
+}
+
+func (c *Compiler) compileInfixExpression(node *ast.InfixExpression) error {
+	if node.Operator == "<" {
+		err := c.Compile(node.Right)
 		if err != nil {
 			return err
 		}
 
-		// Emit an `OpJumpNotTruthy` with a bogus value
-		jumpNotTruthyPos := c.emit(code.OpJumpNotTruthy, 9999)
+		err = c.Compile(node.Left)
+		if err != nil {
+			return err
+		}
 
-		err = c.Compile(node.Consequence)
+		c.emit(code.OpGreaterThan)
+		return nil
+	}
+	err := c.Compile(node.Left)
+	if err != nil {
+		return err
+	}
+
+	err = c.Compile(node.Right)
+	if err != nil {
+		return err
+	}
+
+	switch node.Operator {
+	case "+":
+		c.emit(code.OpAdd)
+	case "-":
+		c.emit(code.OpSub)
+	case "*":
+		c.emit(code.OpMul)
+	case "/":
+		c.emit(code.OpDiv)
+	case ">":
+		c.emit(code.OpGreaterThan)
+	case "==":
+		c.emit(code.OpEqual)
+	case "!=":
+		c.emit(code.OpNotEqual)
+	default:
+		return fmt.Errorf("unknown operator %s", node.Operator)
+	}
+
+	return nil
+}
+
+func (c *Compiler) compilePrefixExpression(node *ast.PrefixExpression) error {
+	err := c.Compile(node.Right)
+	if err != nil {
+		return nil
+	}
+
+	switch node.Operator {
+	case "!":
+		c.emit(code.OpBang)
+	case "-":
+		c.emit(code.OpMinus)
+	default:
+		return fmt.Errorf("unknown operator %s", node.Operator)
+	}
+
+	return nil
+}
+
+func (c *Compiler) compileIfExpression(node *ast.IfExpression) error {
+	err := c.Compile(node.Condition)
+	if err != nil {
+		return err
+	}
+
+	// Emit an `OpJumpNotTruthy` with a bogus value
+	jumpNotTruthyPos := c.emit(code.OpJumpNotTruthy, 9999)
+
+	err = c.Compile(node.Consequence)
+	if err != nil {
+		return err
+	}
+
+	if c.lastInstructionIsPop() {
+		c.removeLastPop()
+	}
+
+	if node.Alternative == nil {
+		afterConsequencePos := len(c.instructions)
+		c.changeOperand(jumpNotTruthyPos, afterConsequencePos)
+	} else {
+		jumpPos := c.emit(code.OpJump, 9999)
+
+		afterConsequencePos := len(c.instructions)
+		c.changeOperand(jumpNotTruthyPos, afterConsequencePos)
+
+		err := c.Compile(node.Alternative)
 		if err != nil {
 			return err
 		}
@@ -134,30 +185,20 @@ func (c *Compiler) Compile(node ast.Node) error {
 			c.removeLastPop()
 		}
 
-		afterConsequencePos := len(c.instructions)
-		c.changeOperand(jumpNotTruthyPos, afterConsequencePos)
-
-		if node.Alternative == nil {
-			afterConsequencePos := len(c.instructions)
-			c.changeOperand(jumpNotTruthyPos, afterConsequencePos)
-		} else {
-			c.emit(code.OpJump, 9999)
-
-			afterConsequencePos := len(c.instructions)
-			c.changeOperand(jumpNotTruthyPos, afterConsequencePos)
-			// p.99~
-		}
-
-	case *ast.BlockStatement:
-		for _, s := range node.Statements {
-			err := c.Compile(s)
-			if err != nil {
-				return err
-			}
-		}
-
+		afterAlternativePos := len(c.instructions)
+		c.changeOperand(jumpPos, afterAlternativePos)
 	}
 
+	return nil
+}
+
+func (c *Compiler) compileBlockStatement(node *ast.BlockStatement) error {
+	for _, s := range node.Statements {
+		err := c.Compile(s)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
