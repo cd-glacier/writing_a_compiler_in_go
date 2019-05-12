@@ -141,6 +141,9 @@ func (c *Compiler) Compile(node ast.Node) error {
 		str := &object.String{Value: node.Value}
 		c.emit(code.OpConstant, c.addConstant(str))
 
+	case *ast.ArrayLiteral:
+		return c.compileArrayLiteral(node)
+
 	}
 
 	return nil
@@ -301,6 +304,19 @@ func (c *Compiler) compileIdentifier(node *ast.Identifier) error {
 		return fmt.Errorf("undefined variable %s", node.Value)
 	}
 	c.emit(code.OpGetGlobal, symbol.Index)
+
+	return nil
+}
+
+func (c *Compiler) compileArrayLiteral(node *ast.ArrayLiteral) error {
+	for _, el := range node.Elements {
+		err := c.Compile(el)
+		if err != nil {
+			return err
+		}
+	}
+
+	c.emit(code.OpArray, len(node.Elements))
 
 	return nil
 }
