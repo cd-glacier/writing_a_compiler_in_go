@@ -6,6 +6,7 @@ import (
 	"github.com/g-hyoga/writing_a_compiler_in_go/src/monkey/code"
 	"github.com/g-hyoga/writing_a_compiler_in_go/src/monkey/compiler"
 	"github.com/g-hyoga/writing_a_compiler_in_go/src/monkey/object"
+	"github.com/k0kubun/pp"
 )
 
 const StackSize = 2048
@@ -353,6 +354,6 @@ func (vm *VM) buildHash(startIndex, endIndex int) (object.Object, error) {
 		hashedPairs[hashKey.HashKey()] = pair
 	}
 
-	fmt.Println(hashedPairs)
+	pp.Println(hashedPairs)
 	return &object.Hash{Pairs: hashedPairs}, nil
 }
